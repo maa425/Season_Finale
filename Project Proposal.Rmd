@@ -1,0 +1,1026 @@
+---
+title: "Project Report: Predicting the Churn Rate Amongst Welfare Recipients "
+author: "Meshal Alkhowaiter"
+date: "12/14/2019"
+output: 
+  pdf_document:
+    toc: true
+header-includes: \usepackage{setspace}\doublespacing
+fontsize: 12pt
+---
+
+# R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+# Introduction:
+
+### What is the aim of the project?
+The purpose of this project is to utilize machine learning models we have covered in this class, along with a linear model: Logisitc Regression, in a classification context. Specifically, I aim to predict a binary-outcome, the Churn Rate, at the individual level for observsations that Leave or Stay in a welfare prgoram.
+
+### The main objectives of this project are:
+1- Comparing the performance of various non-parametric machine learning models such as SVM, RF, and KNN, in predicting our outcome of interest: Churn Rate amongst welfare recipients. 
+2- Comparing the performance of the top machine learning model, with a parametric model: Logistic Regression.
+3- Discussing the results from a policy-maker's perspective in the context of Saudi Arabia's labor market. Specifically, I am primarily interested in developing a model that is capable of correctly classifying those who have left welfare, before their 5-year wage subsidy period is completed. This is because I believe that gaining an understanding of the characterisitcs of such individuals can offer insight to policymakers on future welfare programs' design.
+
+### Project Roadmap:
+1- I first began with Layer 0: split the data; however, deciding how to split my data (i.e. randomly or by date, and if so by which date) turned out to be a challenging part of the project.
+
+2- Exploring my data and analyzing relationships; whereby I looked at the distribution of wages, age, gender, and educational qualification across different schools and regions in my main dataset: Teachers' Subsidy Program. In this step, I also decided how to create my outcome variable: left_welfare, and the underlying assumptions behind my two binary outcomes. Additionally, I explored through visualizations some common hypotheses in Saudi Arabia's labor market context. For instance, whether men on average, are more mobile in the labor market than females, and thus are likely to receive higher wages than females with the same job titles and educational qualifications.
+
+3- Data wrangling, where I created new variables based on existing ones, experimented with different functional forms of my variables (i.e. whether to Log, Square, or Cube a given continuous variable). 
+
+4- Running both my parametric and non-parametric models on my training datasets. Assessing the performance across linear and non-linear models, as well as the performance within my machine learning non-parametric models. Analyzing the results and discussing the limitations of each model.
+
+5- Running my top performing model on my test_data, and discussing the findings and how the model performed with data it has not seen before.
+
+# Problem Statement and Background:
+
+### High-level statement:
+
+Using a machine learning models along with a Logistic Regression model, to predict Churn rate or the probability that a given welfare recipient will drop out of a welfare program, before fully exhausting their wage subsidy period.
+
+## Background:
+The Teachers’ Wage Subsidy schema requires subsidized teachers to find a job at a private school that is willing to hire them and that has agreed to participate in the program. The program offers a 50% wage subsidy that is capped at 2500 Riyals per month, and runs for five years.
+Additionally, the program obliges participating private schools to pay a minimum of 5600 Riyals per month, but schools have the option to pay their subsidized teachers more if they decide to.
+
+## Literature Review:
+
+There is an extensive body of literature on the utilization of non-parametric machine learning models in predicting customer attrition or churn rate, and this application of ML has been gaining popularity since the mid-00s. The Xie et al. 2009 paper uses various Random Forest techniques such as improved balanced random forests (IBRF) and decision-trees (DT) to predict churn rate amongst customers in a Chinese bank. Specifically the authors develop a (IBRF) model that predicts with 93% accuracy which customers will leave the bank and close their account. The (DT) model performed poorly compared to (IBRF) with a 62% accuracy. The Benlen et al. 2014 paper builds on prior literature and uses two SVM model techniques, Logistic Regression, to predict churn rate amongst customers in a Chinese bank. The authors found that Logistic Regression performed better with a 64% accuracy, than an SVM Linear model, which had a 57% accuracy. 
+
+A growing, albeit still limited body of literature exists on applying machine learning models in the context 
+of government and non-profit programs. The Ozekes et.al 2014 paper is one of the first to apply ML techniques such as KNN and RF to predict dropout rate, amongst students in an online education system in Turkey. The authors found that KNN outperformed RF in accuracy; however, the KNN model also had a high Sensitivity or True Positives rate, but extremely low Specificity. The authors argue that this limitation is due to most people actually droping out of the program.
+
+# Data:
+
+### Where does the data come from?
+
+I am using administrative individual-level data that I have acquired for my thesis, from the Ministry of Labor and Social Development in Saudi Arabia. The dataset is for the Teachers’ Wage Subsidy program, which is a program that was introduced in 2012 to absorb and employ the large number of unemployed teachers at the time. Additionally, I am using the national standardized exam scores at the school-level.
+
+### What is the unit of observation?
+Initially, I intended to use schools as my unit of analysis; however, for resasons I will explain below, each observation in my analysis is an individual. The rationale behind using individuals instead of schools, as my unit of analysis, is that due to different yet correct Arabic writing styles, the Ministry of Labor and the Ministry of Education had both adopted different ways of writing the same school_name, thus resulting in zero matching based on school_name between the two datasets. This matter is further illustrated in latter sections.
+
+### What are the variables of interest?
+
+The main dataset I am using came in a raw administrative-data format, so
+crucial variables of interest that are necessary for my analsyis were not included, so I had to create them as explained in the upcoming section. However, my variables of interest encompass ecoonomic measures such as monthly_wage and job title, education measures such as educational attainment and college major (i.e. Bachelor's degree in Physics, etc), job title, geographic measures on city and region, demographic information such as gender and age.
+
+### What steps did you take to wrangle the data?
+This part includes creating key variables for my analysis that did not originally exist in my dataset. These include such as age_at_enrollment, my Y variable: left_welfare, a categorical variable for monthly_wage, experimenting with the functional form of monthly_wage (i.e. standardized and whether the variable is logged, sqaured, etc), categorical variable for 13 regions and 79 cities, dummy variablem for time (i.e. how many years has the person been in the program).
+
+I also wanted to check the number of new subsidized teachers (i.e. beneficiary_name variable)  per year, for the five-year period of the program. Specifically, the first year starts on 2012-09-01, and ends on 2013-08-31, the second year starts on 2013-09-01, and ends on 2014-08-31, and so on. This particular where I created a year variable, along with a year dummy variable was extremely challenging. 
+
+
+### Definition of Project Success:
+
+# Through the examples of data wrangling described above, in addition to existing variables, 
+I would like to develop Logistic Regression model that predicts with reasonable accuracy, an individual’s likelihood to leave the program before the five-year wage subsidy period is exhausted. 
+
+The policy relevance of this is to formulate an understanding of what factors and characteristics cause a welfare recipient to stay or drop out of the program, in Saudi Arabia. For instance, one insightful finding may be that a school’s geographic location, is a better predictor of job retention for a subsidized teacher, than factors such as wage and gender, which policy analysts may perceive as are more relevant in Saudi Arabia’s context.
+
+```{r setup, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(tidyverse)
+require(readxl)
+require(haven)
+require(foreign)
+require(skimr)
+require(ggalt)
+require(lubridate)
+require(caret) # for machine learning
+require(recipes) # For preprocessing your data
+require(rattle) # For nice tree plots
+require(dummies)
+require(vip)
+require(ranger)
+require(pdp)
+require(fastDummies)
+require(stargazer)
+```
+
+```{r, echo=FALSE}
+# import teachers' subsidy datase
+teachers_subsidy <- read_xlsx("teachers_subsidy.xlsx", 
+  sheet = "teachers_subsidy")
+
+# import standardized_exams
+standardized_exams <- read.csv("standardized_exams_saudi.csv")
+
+# Making columns names lower case and replacing spaces with "_"
+names(teachers_subsidy) <- tolower(names(teachers_subsidy))
+names(teachers_subsidy) <- gsub(" ", "_", names(teachers_subsidy))
+
+
+# chech if data format has changed:
+head(teachers_subsidy)
+```
+
+```{r,echo=FALSE}
+# Only keep the "برنامج دعم المعلمين والمعلمات" within teachers' subsidy column:
+teachers_subsidy2 = teachers_subsidy
+teachers_subsidy2 <- filter(teachers_subsidy2, teachers_subsidy == "برنامج دعم المعلمين والمعلمات")
+
+# Check if other welfare programs are dropped:
+glimpse(teachers_subsidy2)
+```
+
+
+```{r,echo=FALSE}
+## Here, I am dropping columns that I confirmed with the Ministry of Labor officials to have never been collected and completed. This is because the dataset structure was designed for all welfare programs, rather than solely the Teachers' Subsidy program. Therefore, the columns that I am dropping relates to information such as whether a welfare recipient has received a job training program, before the subsidy, the name of the job training center that I enrolled in, etc.
+## However, under the Teachers' Subsdiy program, these variables are not relevant.
+# Drop مدة_دعم_التدريب, مدة_دعم_التوظيف, راتب_التدريب, عدد_أشهر_الدعم, 100/_700__رقم, تكلفة_التدريب, median_of_مدة_دعم_التوظيف_masters_and_phd, ...26, ...27
+
+teachers_subsidy3 <-
+select(teachers_subsidy2,-مدة_دعم_التوظيف, 
+       -مدة_دعم_التدريب,
+       -راتب_التدريب,
+       -عدد_أشهر_الدعم,
+       -اسم_جهة_التدريب,
+       -تكلفة_التدريب,
+       -median_of_مدة_دعم_التوظيف_masters_and_phd,
+       -...26,
+       -...27)
+```
+
+
+```{r, echo=FALSE}
+## Merged the two datasets by school_name
+merged_dataset <- anti_join(standardized_exams, test_teachers_subsidy5_categorical_y, by = "school_name")
+  skim(merged_dataset)
+# Unfortunately, due to slight differences in Arabic writing styles, R was not able to match any school_names. 
+```
+
+```{r, echo=FALSE}
+## Create an age_at_enrollment variable, based on the start_date per individual (i.e. I want to know an individual's age, when they began their subsidized job).
+
+teachers_subsidy4 = teachers_subsidy3 %>% mutate(age_at_enrollment = (as.Date(start_date)-as.Date(birth_date))/365.25)
+
+head(teachers_subsidy4)
+```
+
+
+```{r, echo=FALSE}
+## Create a duration_in_program variable, using start_date & end_date. It would be useful to see how duration_in_program may vary by geographic region/city, gender, and age.
+teachers_subsidy5 = teachers_subsidy4 %>% mutate(duration_in_program = (as.Date(end_date)-as.Date(start_date))/365.25)
+
+head(teachers_subsidy5)
+```
+
+
+```{r, echo=FALSE}
+skim(teachers_subsidy5)
+## Check why the max and min values in age_at_enrollment and duration_in_program are unusual. Specifically, no one should have a negative age_at_enrollment, or an age_at_enrollment of 1394.461328??
+
+
+## The only variable with missing values is end_date, with a roughly 58% completion rate.
+## However, this is not concerning as it simply means that the individual was still a welfare recipient as of the date at which the data was received. For instance, an individual who was still receiving a wage subsidy at the date that the data is collected, would have an NA under the end_date column. 
+```
+
+```{r, echo=FALSE}
+## Turn the unit of analysis into the school level. Collapse the beneficiary_name, at the school_name: View the distribution of teachers per school, along with avarege wages at the school level, per gender.
+
+teachers_subsidy6 <- teachers_subsidy5 %>% group_by(school_name,gender) %>% summarize(count = n(), average_wage_per_employer = sum(monthly_wage)/n())
+```
+
+
+```{r, echo=FALSE}
+# The start_date and end_date variables are currently in a character strings format, so I need to randomly generate some dates, starting from September 2012, using Lubridate:
+# teachers_subsidy5 <- dmy("1/09/2012")
+#teachers_subsidy5 <- tibble(date = teachers_subsidy5 + runif(100, 0, 1500))
+
+# Adding the 'year' column
+teachers_subsidy_with_year <-
+teachers_subsidy5 %>% 
+    mutate(year = case_when(
+         as.Date(start_date, "%Y-%m-%d") < dmy("1/9/2013") ~ 1,
+         as.Date(start_date, "%Y-%m-%d") >= dmy("1/9/2013") & as.Date(start_date, "%Y-%m-%d") <= dmy("31/8/2014") ~ 2,
+         as.Date(start_date, "%Y-%m-%d") >= dmy("1/9/2014") & as.Date(start_date, "%Y-%m-%d") <= dmy("31/8/2015") ~ 3,
+         as.Date(start_date, "%Y-%m-%d") >= dmy("1/9/2015") & as.Date(start_date, "%Y-%m-%d") <= dmy("31/8/2016") ~ 4,
+         as.Date(start_date, "%Y-%m-%d") >= dmy("1/9/2016") & as.Date(start_date, "%Y-%m-%d") <= dmy("31/8/2017") ~ 5
+         )) 
+teachers_subsidy5 <- bind_cols(teachers_subsidy5, teachers_subsidy_with_year)
+```
+
+```{r, echo=FALSE}
+## Creating a year dummy variable
+teacher_count = teachers_subsidy_with_year %>% group_by(year) %>% summarize(starting_teachers = n())
+
+teachers_subsidy_with_year = left_join(teachers_subsidy_with_year, teacher_count, by = "year")
+#teachers_subsidy_with_year_3000 = teachers_subsidy_with_year[1:3001,]
+#teachers_subsidy_with_year_3000_dummy = fastDummies::dummy_cols(teachers_subsidy_with_year_3000, select_columns = "year")
+teachers_subsidy_with_year_dummy = fastDummies::dummy_cols(teachers_subsidy_with_year, select_columns = "year")
+```
+
+
+```{r, echo=FALSE}
+## View the distribution of teachers per city, along with avarege wages per educational qualification and gender.
+
+wage_city_level <- teachers_subsidy5 %>% group_by(region,gender, educational_qualification) %>% summarize(count = n(), average_wage_per_city = sum(monthly_wage)/n())
+```
+
+```{r}
+## View how wages are distributed per gender, age_at_enrollment ,age-group, and educational_qualification........
+
+wage_city_level <- teachers_subsidy5 %>% group_by(city,gender, educational_qualification) %>% summarize(count = n(), average_wage_per_city = sum(monthly_wage)/n())
+```
+
+```{r}
+## View how wages are distributed per gender, age_at_enrollment ,age-group, and educational_qualification........
+
+wage_per_age <- teachers_subsidy5 %>% group_by(age_at_enrollment, gender, educational_qualification) %>% summarize(count = n(), average_wage_per_age = sum(monthly_wage)/n())
+```
+
+
+```{r, echo=FALSE}
+## Data Visualization
+
+gender_wage_comparison <- read.csv(file = "dumbbell_plot_data_science.csv")
+
+# Change variables from character into numeric format  
+gender_wage_comparison <-  gender_wage_comparison %>% 
+  mutate(male_wages = as.double(male_wages))
+
+# Check format of variables
+sapply(gender_wage_comparison, class)
+
+## Create a dumbbell plot to compare boys and girls performance within the same school
+ggplot(gender_wage_comparison, aes(x=male_wages, xend=female_wages, y=city,)) + 
+  geom_dumbbell(size=1,color="grey", 
+                colour_x = "blue", colour_xend = "red",
+                dot_guide=TRUE, dot_guide_size=0.10) +
+  scale_x_continuous(limits = c(5600,7600)) +
+  labs(x="Average Monthly Wage per Education Level", y="City", 
+       title="Average Monthly Wage In the two Largest Cities 
+in Saudi Arabia, per Education Level", y="City",
+       subtitle=
+         "With the exception of women with a Master's degree and working in Jeddah, 
+females roughly earn the same as men when controlling for educational attainment",
+       caption="Source: Qiyas | Meshal Alkhowaiter") +
+  theme(panel.grid.major.x=element_line(size=.3)) +
+  theme(panel.grid.major.y=element_blank())+
+  theme(axis.text.y=element_text(size = rel(0.55)))+
+  theme(plot.title = element_text(hjust =0)) +
+  theme(axis.title.x=element_text(
+    hjust=0),
+    axis.title.y=element_text(
+      angle=0, hjust=+8),
+    plot.title = element_text(
+      face="bold"))
+
+ggsave(
+  wage_gap_chart,
+  filename = "wage_gap.png"
+)
+```
+
+
+```{r, echo=FALSE}
+## Create a Y variable, whereby 1 equals a person who no longer receives a subsidy, and 0 equals a person currently receiving a subsidy, where end_date=NA.
+# I will be doing this using two variables: 1-start_date and 2-end_date.
+
+#train_teachers_subsidy5_categorical_y = teachers_subsidy5 %>% mutate(left_welfare = as.numeric(is.na(end_date)==FALSE))
+
+#test_teachers_subsidy5_categorical_y = teachers_subsidy5 %>% mutate(left_welfare = as.numeric(is.na(end_date)==FALSE))
+#skim(test_teachers_subsidy5_categorical_y)
+
+teachers_subsidy5_categorical_y = teachers_subsidy_with_year_dummy %>% mutate(left_welfare = as.numeric(is.na(end_date)==FALSE))
+#skim(teachers_subsidy5_categorical_y)
+```
+
+
+```{r, echo=FALSE}
+## Split the data randomly
+set.seed(1234)
+index = createDataPartition(teachers_subsidy5_categorical_y$left_welfare,p=.8,list=F) 
+train_data = teachers_subsidy5_categorical_y[index,] # Use 80% of the data as training data 
+test_data = teachers_subsidy5_categorical_y[-index,] # holdout 20% as test data 
+
+dim(train_data)
+```
+
+```{r, echo=FALSE}
+## Data Exploration for Categorical Variables Part 1
+train_data %>% 
+  select_if(is.character) %>% 
+  gather(var,val) %>% 
+  ggplot(aes(val)) +
+  geom_bar() +
+  scale_y_log10() +
+  facet_wrap(~var,scales="free",ncol=3) +
+  coord_flip()
+```
+
+
+```{r, echo=FALSE}
+## Data Exploration for Categorical Variables Part 2, while considering potential issues for a Logistic Regression or Support Vector Machine models:
+train_data %>% 
+  select_if(is.character) %>% 
+  group_by_all() %>% 
+  count() %>% 
+  spread(left_welfare,n,fill=0) %>% 
+  arrange(left_welfare)
+```
+
+```{r, echo=FALSE}
+## Data Exploration for the distribution of my Continuous Variables
+train_data %>% 
+  select_if(is.numeric) %>% 
+  gather(var,val) %>% 
+  ggplot(aes(val)) +
+  geom_histogram(bins = 75) +
+  facet_wrap(~var,scales="free",ncol=1) 
+```
+
+
+```{r, echo=FALSE}
+## Convert the continuous variable, monthly_wage, to a Logged variable
+train_data = train_data %>% mutate(monthly_income = log(monthly_wage))
+test_data = test_data %>% mutate(monthly_income = log(monthly_wage))
+```
+
+
+```{r, echo=FALSE}
+## Turn variables into indicator variables and standardize the data
+rcp <- 
+  recipe(left_welfare ~  job_title + gender + region + monthly_income + age_at_enrollment + educational_qualification + city + duration_in_program + year_1 + year_2 +
+           year_3 + year_4 + year_5, train_data) %>% step_dummy(all_nominal(),-all_outcomes(),-educational_qualification) %>% step_dummy(educational_qualification, one_hot = TRUE) %>% 
+  step_range(all_numeric()) %>%  # Normalize scale
+  prep()
+
+# Apply the recipe to the training and test data
+train_data <- bake(rcp,train_data)
+test_data <- bake(rcp,test_data)
+```
+
+```{r, echo=FALSE}
+# Cross Validation Part 1
+set.seed(1992) # setting a seed for replication purposes 
+
+folds <- createFolds(train_data$left_welfare, k = 5) # Partition the data into 5 equal folds
+
+tune_mtry <- expand.grid(mtry = c(2, 5 , 8 , 10, 12 ,15), splitrule = c("variance", "extratrees"), min.node.size = c(1))
+
+sapply(folds,length)
+```
+
+```{r, echo=FALSE}
+# Cross Validation Part 2
+control_conditions <- 
+  trainControl(method='cv', # K-fold cross validation
+               summaryFunction = twoClassSummary, # Need this b/c it's a classification problem
+               classProbs = TRUE, # Need this b/c it's a classification problem
+               index = folds # The indices for our folds (so they are always the same)
+  )
+```
+
+```{r, echo=FALSE}
+## Check if my Y variable, left_welfare, whether is a factor or numeric variable
+#levels(train_data$left_welfare)
+
+## Convert my numeric Y variable, left_welfare, into a factor variable, to make it suitable for a logistic regression
+#train_data$left_welfare <- as.factor(train_data$left_welfare)
+#levels(train_data3$left_welfare) <- c("stayed", "left")
+```
+
+
+```{r, echo=FALSE}
+## Check if my Y variable, left_welfare, whether is a factor or numeric variable
+levels(train_data$left_welfare)
+
+## Convert my numeric Y variable, left_welfare, into a factor variable, to make it suitable for a logistic regression
+train_data$left_welfare <- as.factor(train_data$left_welfare)
+levels(train_data$left_welfare) <- c("stayed", "left")
+#skim(train_data)
+```
+
+
+```{r}
+## Convert my numeric Y variable, left_welfare, into a factor variable, to make it suitable for a logistic regression
+test_data$left_welfare <- as.factor(test_data$left_welfare)
+levels(test_data$left_welfare) <- c("stayed", "left")
+```
+
+```{r, echo=FALSE}
+# Save train_data and test_data.csv files
+train_data %>% write_csv("train_data.csv")
+test_data %>% write_csv("test_data.csv")
+```
+
+# Analysis: 
+### Describe the methods/tools you explored in your project:
+
+I applied parametric and non-parametric models to predict which individuals will leave the program based on roughly 22  individual level variables or characteristics such as the level of education, region, city, date of birth, gender, wage, age_at_enrollment. The results of the models I ran are as follows:
+
+## Model Results with Splitting by date AND Before Creating a Year dummy and a monthly_income log variable:
+```{r, echo=FALSE}
+## Splitting by date
+## Split the data based on start_date and end_date
+#train_teachers_subsidy5 = teachers_subsidy5 %>% filter(start_date < as.Date("2015-08-31"))
+#test_teachers_subsidy5 = teachers_subsidy5 %>% filter(start_date >= as.Date("2015-09-01"))
+# Proporation in the training data 
+#round(nrow(train_teachers_subsidy5)/nrow(teachers_subsidy5),3)
+```
+
+```{r, echo=FALSE}
+## Random Forest Results with Date Splitting
+57658 samples
+27 predictor
+2 classes: 'stayed', 'left' 
+
+No pre-processing
+Resampling: Cross-Validated (10 fold) 
+Summary of sample sizes: 11531, 11531, 11532, 11532, 11532 
+Resampling results across tuning parameters:
+  
+  mtry  splitrule   ROC        Sens       Spec        
+2    gini        0.6273579  0.9999011  0.0006250729
+2    extratrees  0.6246980  0.9999197  0.0005667791
+14    gini        0.5968382  0.9324610  0.1116113149
+14    extratrees  0.6192781  0.9740323  0.0523004026
+27    gini        0.5584677  0.7546156  0.2977507092
+27    extratrees  0.5589923  0.7635036  0.2905489827
+
+Tuning parameter 'min.node.size' was held constant at a value of 1
+ROC was used to select the optimal model using the largest value.
+The final values used for the model were mtry = 2, splitrule = gini and min.node.size = 1.
+```
+
+
+```{r, echo=FALSE}
+## Random Forest Results with Date Splitting But W/out Adding dummy variables 
+84172 samples
+31 predictor
+2 classes: 'stayed', 'left' 
+
+No pre-processing
+Resampling: Cross-Validated (10 fold) 
+Summary of sample sizes: 16833, 16834, 16835, 16835, 16835 
+Resampling results across tuning parameters:
+  
+  mtry  splitrule   min.node.size  ROC        Sens        Spec     
+2    variance     1             0.5000000         NaN        NaN
+2    variance     5             0.5000000         NaN        NaN
+2    variance    10             0.5000000         NaN        NaN
+2    extratrees   1             0.5855720  0.02210571  0.9913172
+2    extratrees   5             0.5856393  0.02101003  0.9915518
+2    extratrees  10             0.5855984  0.02221244  0.9909807
+10    variance     1             0.5000000         NaN        NaN
+10    variance     5             0.5000000         NaN        NaN
+10    variance    10             0.5000000         NaN        NaN
+10    extratrees   1             0.5856934  0.14514904  0.9064017
+10    extratrees   5             0.5857775  0.14681392  0.9052189
+10    extratrees  10             0.5858996  0.14614515  0.9060091
+15    variance     1             0.5000000         NaN        NaN
+15    variance     5             0.5000000         NaN        NaN
+15    variance    10             0.5000000         NaN        NaN
+15    extratrees   1             0.5832103  0.17983372  0.8813630
+15    extratrees   5             0.5839238  0.17954912  0.8809143
+15    extratrees  10             0.5841623  0.17757119  0.8826478
+20    variance     1             0.5000000         NaN        NaN
+20    variance     5             0.5000000         NaN        NaN
+20    variance    10             0.5000000         NaN        NaN
+20    extratrees   1             0.5775256  0.20186123  0.8604285
+20    extratrees   5             0.5789632  0.20025329  0.8619683
+20    extratrees  10             0.5801987  0.19849590  0.8648592
+
+ROC was used to select the optimal model using the largest value.
+The final values used for the model were mtry = 10, splitrule = extratrees and min.node.size
+= 10.
+```
+
+
+### Models Results with the Random Splitting of the Data AFTER Creating Year dummy, educational_attainment, and a monthly_income log variable:
+```{r, echo=FALSE}
+## Run a Random Forest model
+mod_rf <-
+ train(left_welfare ~  job_title_معلم 
+        + gender_ذكر + 
+        + region_الرياض + age_at_enrollment + monthly_income + educational_qualification_دبلوم.فوق.الثانوي + city_الدمام + year_1 + year_2 +
+           year_3 + year_4 + year_5 + region_الجوف + educational_qualification_شهادة.الماجستير
+           + city_طبرجل + job_title_مدير.مدرسة,
+        # Equation (outcome and specific variables)
+        data=train_data, # Training data 
+        method = "ranger", # random forest (ranger is much faster than rf)
+        metric = "ROC", # area under the curve
+        trControl = control_conditions,
+        tuneGrid = tune_mtry,
+        na.action = na.omit
+  )
+mod_rf
+```
+
+
+```{r, echo=FALSE}
+## Generate a performance plot for RF
+plot(mod_rf)
+ggsave(
+  "mod_rf.png")
+#skim(train_data)
+```
+
+
+```{r, echo=FALSE}
+## Run a Random Forest model, with all Regions included in the model to see if it will improve my model's predictive power in the same way that adding the Year dummy variable has. 
+mod_rf2 <-
+  train(left_welfare ~  job_title_معلم 
+        + gender_ذكر + 
+        + region_الرياض + age_at_enrollment + monthly_income + educational_qualification_دبلوم.فوق.الثانوي + city_الدمام + year_1 + year_2 +
+           year_3 + year_4 + year_5 + region_الجوف + educational_qualification_شهادة.الماجستير
+        + job_title_وكيل + region_الباحة + region_الحدود.الشمالية + region_القصيم + region_المدينة.المنورة
+        + region_المنطقة.الشرقية + region_تبوك + region_جازان + region_حائل
+        + region_عسير + region_مكة.المكرمة + region_نجران,
+        # Equation (outcome and specific variables)
+        data=train_data, # Training data 
+        method = "ranger", # random forest (ranger is much faster than rf)
+        metric = "ROC", # area under the curve
+        trControl = control_conditions,
+        tuneGrid = tune_mtry,
+        na.action = na.omit
+  )
+mod_rf2
+#skim(train_data)
+```
+
+```{r, echo=FALSE}
+plot(mod_rf2)
+#ggsave(
+  #"mod_rf2.png")
+```
+
+```{r, echo=FALSE}
+## I have encountered an error in generating my Variable Importance Plot, which I attempted to generate for my RF model. However, based on what I have read online, one way to work around this issue is to select the variables I specifically included in my model and creating a new DF, then running my model based on that newly created: train_data_rf
+train_data_rf <-
+ select(train_data, job_title_معلم ,job_title_مدير.مدرسة, left_welfare , gender_ذكر, 
+         job_title_وكيل, region_الباحة, region_الرياض, region_الجوف,
+         region_الحدود.الشمالية, region_القصيم, region_المدينة.المنورة,
+         region_المنطقة.الشرقية, region_تبوك, region_جازان, region_حائل,
+         region_عسير, region_مكة.المكرمة, region_نجران, age_at_enrollment, monthly_income,
+         educational_qualification_دبلوم.فوق.الثانوي, 
+         educational_qualification_شهادة.الماجستير ,city_ابو.عريش,city_الخبر,year_1, year_2, 
+         year_3, year_4, year_5, educational_qualification_بكالوريوس.متخصص)
+```
+
+
+```{r, echo=FALSE}
+## Perform the same method with the test_data
+test_data_rf <-
+  select(test_data, job_title_معلم ,job_title_مدير.مدرسة, left_welfare , gender_ذكر, 
+         job_title_وكيل, region_الباحة, region_الرياض, region_الجوف,
+         region_الحدود.الشمالية, region_القصيم, region_المدينة.المنورة,
+         region_المنطقة.الشرقية, region_تبوك, region_جازان, region_حائل,
+         region_عسير, region_مكة.المكرمة, region_نجران, age_at_enrollment, monthly_income,
+         educational_qualification_دبلوم.فوق.الثانوي, 
+         educational_qualification_شهادة.الماجستير ,city_ابو.عريش,city_الخبر,year_1, year_2, 
+         year_3, year_4, year_5, educational_qualification_بكالوريوس.متخصص)
+```
+
+
+```{r, echo=FALSE}
+# Save the new train_data and test_data.csv files
+train_data %>% write_csv("train_data_rf.csv")
+test_data %>% write_csv("test_data_rf.csv")
+```
+
+```{r, echo=FALSE}
+## Tune my mtry to
+rf_tune_mtry3 = expand.grid(mtry = c(2,3,4,5,6,8), splitrule = c("extratrees", "gini"), min.node.size = 4)
+rf_tune_mtry3
+```
+
+# Results:
+```{r, echo=FALSE}
+## Run a Random Forest model, with the new DF: train_data_rf, which I created for the reasons explained earlier.
+mod_rf3 <-
+  train(left_welfare ~  job_title_معلم 
+        + gender_ذكر + 
+        + region_الرياض + age_at_enrollment + monthly_income + educational_qualification_دبلوم.فوق.الثانوي +           year_1 + year_2 +
+           year_3 + year_4 + year_5 + region_الجوف 
+        + job_title_وكيل + region_الباحة + region_الحدود.الشمالية + region_القصيم + region_المدينة.المنورة
+        + region_المنطقة.الشرقية + region_تبوك + region_جازان + region_حائل
+        + region_عسير + region_مكة.المكرمة + region_نجران,
+        # Equation (outcome and specific variables)
+        data=train_data_rf, # Training data 
+        method = "ranger", # random forest (ranger is much faster than rf)
+        metric = "ROC", # area under the curve
+        trControl = control_conditions,
+        tuneGrid = rf_tune_mtry3,
+        na.action = na.omit
+  )
+mod_rf3
+```
+# Train_data Results and Discussion:
+## ROC: 
+The highest ROC here is roughly 70.8%, which is a significant improvement from my prior RF models.
+
+## Sensitivity:
+True positive or Sensitivity in an RF model, tells us the proportion of people that left welfare that were correctly classified. The proportion correctly predicted by our model: mod_rf3, as leaving welfare, is roughly 41%. I find the results disappointing from the perspective of my project's objectives and from a policy-maker's view interested in gainig a better understanding in what factors contribute to one's decision to leave welfare. However, at the same time, it reinforces the underlying complexity in understanding why people behave in a certain manner and our often times irrational and unstructured decision-making process. 
+
+## Specificity: 
+On the other hand, True Negatives or Specificity in our context, tells us about the percentage of individuals that DID NOT leave welfare, that were correctly classified by the RF model. The proportion correctly classified by our model: mod_rf3, as staying in welfare, amongst those who ACTUALLY stayed is 85.6%, which means our model is good in predicting individuals who will stay in the program for the five-year period, until the wage subsidy is fully exhausted. Additionally, this finding is insightful from a policy-maker's perspective because it may inform policymakers about the characteristics of individuals who are likely to stay in the welfare program. Specifically, our model: mod_rf3, may have performed well in predicting those who have stayed in the program because it is a more homologous group with common characteristics, compared to individuals who left the program, where the model relatively struggled in correctly classifying their status.
+```{r, echo=FALSE}
+plot(mod_rf3)
+#ggsave(
+  #"mod_rf3.png")
+```
+
+### Here, I ran a Logistic Regression model, with the same variables and observations that I ran in: train_data_rf. 
+I did this to compare the performance of a linear regression model: Logisitc regression with my top performing Machine Learning model: Random Forest. 
+In general, I would expect a Logistic Regression model to perform worst when there are non-linearities in the data, due to the Bernoulli distribution assumption, while a major advantage of a machine learning model such as RF over linear models is that it can easily handle non-linearities in the data. Interestingly, when comparing my mod_logit and mod_rf3 models, on the basis of ROC, we find that RF performed slightly better at, ROC=0.7072, and mtry = 4, splitrule = extratrees and min.node.size = 4, compared to an ROC of 0.7070 for Logistic Regression. 
+
+However, given that my a major objective of my project is correctly predicting individuals that leave welfare, we should also look at the proportion of TP or Sensitivity. Again, in my context, this is the proportion of individuals who actually left welfare, and were correctly classified by the model. Logisitc regression performed marginally better in that area, by correctly classifying the status of 43% of individuals who left the program, compared to a True Positive proportion of roughly 41% under the RF model.
+
+```{r}
+## Run a Logisitc Regression Model,
+## Estimate the results
+mod_logit <-
+  train(left_welfare ~ job_title_معلم 
+        + gender_ذكر + 
+        + region_الرياض + age_at_enrollment + monthly_income + educational_qualification_دبلوم.فوق.الثانوي +           year_1 + year_2 +
+           year_3 + year_4 + year_5 + region_الجوف 
+        + job_title_وكيل + region_الباحة + region_الحدود.الشمالية + region_القصيم + region_المدينة.المنورة
+        + region_المنطقة.الشرقية + region_تبوك + region_جازان + region_حائل
+        + region_عسير + region_مكة.المكرمة + region_نجران,
+        data=train_data_rf, # Training data 
+        method = "glm", # logit function
+        metric = "ROC", 
+        na.action = na.omit,
+        trControl = control_conditions
+  )
+mod_logit
+stargazer(train_data_rf)
+```
+### RF Model Improvements:
+Based on the above RF model results, paricularly on TP or Sensitivity, it appears that as the Sensitivity rises as I increase my mtry, which is the number of predictors that our model is randomly selecting. Furthermore, I will experiment with a larger node.size, or minimum number of observations in each terminal node, increasing it from 4 to 5. Therefore, by tuning the parameters, I attempt here to increase TP or the proportion of individuals who actually left welfare, that is correctly classified by my RF model. 
+```{r, echo=FALSE}
+## Tune my mtry to
+rf_tune_mtry4 = expand.grid(mtry = c(3, 5, 10, 12, 16), splitrule = c("extratrees", "gini"), min.node.size = 5)
+rf_tune_mtry4
+```
+### Updated RF Model Results:
+The best performing RF model below, using ROC as my metric, is the one where mtry = 3, splitrule = gini and min.node.size = 5, where ROC= 70.8%.
+
+However, given that I am interested in improving my model's Sensitivity performance, it appears that tuning my RF model's parameters above was effective in achieving that goal. Furthermore, my TP or Sensitivity proportion increased from roughly 43% in mod_rf3, with mtry = 8, splitrule = gini and min.node.size = 4.
+
+to 46.6% in mod_rf4, with mtry = 12, splitrule = gini and min.node.size = 5. In other words, my RF model now correctly classifies the status of 46% of individuals who left the program.
+
+It is crucial to point; however, that has while my TP proportion has improved, my ROC has declined slightly to 68%, rather than 70.5% under mod_rf3. Additionally, my Sensitivity improvement has also come at the cost of a lower Specificity or True Negative proportion, declining from 84% in mod_rf3, to approximately 80% in mod_rf4, with mtry = 12, splitrule = gini and min.node.size = 5.
+
+Putting my results from both models: mod_rf3 and mod_rf4, respectively, in explicit statistical terms:
+One may reasonably argue that after tuning my model's parameters and raising my Sensitivity Or True Positive proportion, I essentially reduced Type one error/False Positive, or the proportion of people incorrectly classified as stayed, when they have actually left the program, which is evinced by a higher TP proportion 
+in mod_rf4, compared to mod_rf3.
+
+A consequence or cost of this improvement in Sensitivity, is that I increased Type 2 error/False Negatives, thus my model is incorrectly classifying more individuals as Left, when they have actually stayed in the program. Again, this is also evinced by a lower Specificity in mod_rf4, compared to mod_rf3. For instance, a True Negative/Specificity proportion of 80%, suggests a False Negative proportion of 20% in mod_rf4, which is higher than the False Negative/Type 2 error proportion of roughly 16% we had in model mod_rf3 (Sharma, 2009). 
+
+In conclusion, I believe a key driver for selecting our tuning parameters and how we evaluate one model to another, should be the policy relevance of our outcome. Specifically, in the context of welfare programs in Saudi Arabia, I think it is useful to understand and be able to correctly classify individuals that have 'left' welfare, before the system 'officially' mandates them to leave a welfare program. Therefore, I have placed greater emphasis when tuning my models on increasing Sensitivity/True Positives.
+```{r, echo=FALSE}
+## Run a Random Forest model, with the new DF: train_data_rf, which I created for the reasons explained earlier.
+mod_rf4 <-
+  train(left_welfare ~  job_title_معلم 
+        + gender_ذكر + 
+        + region_الرياض + age_at_enrollment + monthly_income + educational_qualification_دبلوم.فوق.الثانوي +           year_1 + year_2 +
+           year_3 + year_4 + year_5 + region_الجوف 
+        + job_title_وكيل + region_الباحة + region_الحدود.الشمالية + region_القصيم + region_المدينة.المنورة
+        + region_المنطقة.الشرقية + region_تبوك + region_جازان + region_حائل
+        + region_عسير + region_مكة.المكرمة + region_نجران,
+        # Equation (outcome and specific variables)
+        data=train_data_rf, # Training data 
+        method = "ranger", # random forest (ranger is much faster than rf)
+        metric = "ROC", # area under the curve
+        trControl = control_conditions,
+        tuneGrid = rf_tune_mtry4,
+        na.action = na.omit
+  )
+mod_rf4
+```
+
+### SVM, Linear Boundary Model Performance:
+Using ROC as out metric for model performance, the SVM Linear model did not perform well at an ROC of 65%. Interestinlgy, the model also had a high Specificity or True Negative proportion at roughly 85%, which means that the model correctly classified the status of 85% of individuals who actually stayed in the program.
+On the other hand, the model had one the lowest Sensitivity or True Positive rates, compared to other models, at roughly 39%. This suggests that the model performed poorly in correctly classifying individuals who left the program. 
+```{r, echo=FALSE}
+## Run a Support Vector Machine, Linear Boundary
+mod_svm_linear <-
+  train(left_welfare ~ job_title_معلم 
+        + gender_ذكر + 
+        + region_الرياض + age_at_enrollment + monthly_income + educational_qualification_دبلوم.فوق.الثانوي + city_الدمام + year_1 + year_2 +
+           year_3 + year_4 + year_5 + region_الجوف + educational_qualification_شهادة.الماجستير
+        + city_طبرجل + job_title_مدير.مدرسة,# Equation (outcome and and specific variables)
+        data=train_data, # Training data 
+       method = "svmLinear", # SVM with a Linear Boundary
+        metric = "ROC", # area under the curve
+        tuneGrid = expand.grid(C = c(.5,1)), # Add two tuning parameters
+        trControl = control_conditions
+  )
+mod_svm_linear
+```
+
+
+```{r, echo=FALSE}
+plot(mod_svm_linear)
+#ggsave(
+  #"mod_svm_linear.png")
+```
+
+### SVM, Polynomial Boundary Model Performance:
+Using ROC as our metric, the SVM Polynomial performed the worst with an ROC of roughly 51.6%. Furthermore, it is worth noting that across all models, the SVM Polynomial model had the lowest Sensitivity performance. In other words, the model performed poorly in correctly classifying individuals who left the program. Instead, the model appears to have had Specificity of 99%, thus correctly classifying individuals who stayed in the program.
+```{r, echo=FALSE}
+## Run a Support Vector Machine, Polynomial Boundary
+mod_svm_poly <-
+  train(left_welfare ~ job_title_معلم 
+        + gender_ذكر + 
+        + region_الرياض + age_at_enrollment + monthly_income + educational_qualification_دبلوم.فوق.الثانوي + city_الدمام + year_1 + year_2 +
+           year_3 + year_4 + year_5 + region_الجوف + educational_qualification_شهادة.الماجستير
+        + city_طبرجل + job_title_مدير.مدرسة,# Equation (outcome and specific variables)
+        data=train_data, # Training data 
+        method = "svmPoly", # SVM with a polynomial Kernel
+        metric = "ROC", # area under the curve
+        tuneGrid = expand.grid(C = c(.5,1)), # Add two tuning parameters
+        trControl = control_conditions)
+mod_svm_poly
+```
+
+
+```{r, echo=FALSE}
+plot(mod_svm_poly)
+#ggsave(
+  #"mod_svm_poly.png")
+```
+
+### KNN Model Performance:
+The KNN model had a low ROC, but a high Sensitivity or True positive proportion.
+```{r, echo=FALSE}
+## Run a KNN model
+#mod_knn <-
+  train(left_welfare ~ job_title_معلم 
+        + gender_ذكر + 
+        + region_الرياض + age_at_enrollment + monthly_income + educational_qualification_دبلوم.فوق.الثانوي + city_الدمام + year_1 + year_2 +
+           year_3 + year_4 + year_5 + region_الجوف + educational_qualification_شهادة.الماجستير, # Equation (outcome and everything else)
+        data=train_data, # Training data 
+        method = "knn", # K-Nearest Neighbors Algorithm
+        metric = "ROC", # area under the curve
+        trControl = control_conditions
+  )
+mod_knn
+plot(mod_knn)
+```
+
+### T have experimented with different parameters for my KNN model
+```{r}
+## KNN model with tuning parameters
+knn_tune = expand.grid(k = c(1,10,12,14,16,20))
+knn_tune
+```
+
+
+```{r, echo=FALSE}
+mod_knn2 <-
+  train(left_welfare ~ job_title_معلم 
+        + gender_ذكر + 
+        + region_الرياض + age_at_enrollment + monthly_income + educational_qualification_دبلوم.فوق.الثانوي + city_الدمام + year_1 + year_2 +
+           year_3 + year_4 + year_5 + region_الجوف + educational_qualification_شهادة.الماجستير
+        + job_title_وكيل + region_الباحة + region_الحدود.الشمالية + region_القصيم + region_المدينة.المنورة
+        + region_المنطقة.الشرقية + region_تبوك + region_جازان + region_حائل
+        + region_عسير + region_مكة.المكرمة + region_نجران, # Equation (outcome and everything else)
+        data=train_data, # Training data 
+        method = "knn", # K-Nearest Neighbors Algorithm
+        metric = "ROC",
+        tuneGrid = knn_tune, # add the tuning parameters here # area under the curve
+        trControl = control_conditions
+  )
+mod_knn2
+```
+
+
+```{r, echo=FALSE}
+plot(mod_knn2)
+ggsave(
+  "mod_knn2.png")
+```
+
+
+```{r}
+## Model Comparison
+mod_list <-
+  list(
+    knn1 = mod_knn,
+    knn2 = mod_knn2,
+    logit= mod_logit,
+    rf  = mod_rf,
+   svm_linear = mod_svm_linear,
+   svm_poly = mod_svm_poly,
+   rf2 = mod_rf2,
+   rf3 = mod_rf3,
+   rf4 = mod_rf4
+  )
+
+# Generate Plot to compare output. 
+dotplot(resamples(mod_list))
+#ggsave(
+  #"model_comparison.png")
+```
+
+### Given that our best performing model was a non-linear model (i.e. Random Forest) model, then we may use metrics such as the Gini Coefficient to evaluate which variables had the most predictive/explanatory power. We will perform this, using a Permutation approach. Additionally, I will be addressing questions such as:
+
+### What features appear most associated with the left_welfare outcome?
+```{r}
+## Analyzing Variable Importance:
+pred_wrapper <- function(object, newdata) {
+  # wrapper function so vip knows how to calculate a prediction
+  predict(object, data=newdata,type="response")$predictions[,"left"]
+}
+```
+
+Analyzing Variable Importance Part 2: Generating a Variable Importance Plot
+```{r, echo=FALSE}
+## Analyzing Variable Importance Part 2: Generating a Variable Importance Plot
+permute_imp_plot <- 
+  vip::vip(mod_rf3$finalModel,
+           data = train_data_rf,
+           target=train_data_rf$left_welfare,
+           train = train_data_rf %>% select(-left_welfare),
+           reference_class = "left",
+           method="permute",
+           pred_wrapper = pred_wrapper)
+```
+
+```{r}
+## Print the plot:
+permute_imp_plot
+#ggsave(
+  #"variable_importance_plot.png")
+```
+
+### Below, I will test the Marginal Effect of my Top Three variables:
+```{r, echo=FALSE}
+## Testing the Marginal Effect of year_1
+pdp_dat = pdp::partial(mod_rf, 
+                        pred.var = c("year_1"), 
+                        ice = F, 
+                        center = F, 
+                        prob = T,
+                        type= "classification",
+                        train = train_data_rf) 
+pdp_dat
+```
+
+```{r, echo=FALSE}
+## Testing the Marginal Effect of year_4
+pdp_dat = pdp::partial(mod_rf, 
+                        pred.var = c("year_4"), 
+                        ice = F, 
+                        center = F, 
+                        prob = T,
+                        type= "classification",
+                        train = train_data_rf) 
+pdp_dat
+```
+
+```{r, echo=FALSE}
+## Testing the Marginal Effect of my gender variable: gender_ذكر:
+pdp_dat = pdp::partial(mod_rf, 
+                        pred.var = c("gender_ذكر"), 
+                        ice = F, 
+                        center = F, 
+                        prob = T,
+                        type= "classification",
+                        train = train_data_rf) 
+pdp_dat
+```
+
+
+```{{r, echo=FALSE}
+## Plot the Relationship between my Y: left_welfare and my independent year_1
+pdp_dat %>% 
+  ggplot(aes(year_1,yhat)) + geom_line() +
+  labs(y="Pr(left_welfare == 1)")
+```
+
+### Now, I will examine the data for Individual Conditional Expectation: 
+```{r, echo=FALSE}
+## Testing for heterogeneity in our Y variable: left_welfare
+ice_dat = pdp::partial(mod_rf, pred.var = c("year_1"), 
+                        ice = T, center = F, 
+                        prob = T,type= "classification", 
+                        train = train_data_rf)
+ice_dat
+```
+
+
+```{r, echo=FALSE}
+## Generating a visualization for our heterogeneity test:
+ggplot(data=ice_dat) + 
+  geom_line(aes("year_1",yhat,group=yhat.id),alpha=.05) +
+  geom_line(data=pdp_dat,aes("year_1",yhat),color="orange",size=1.5) + 
+  labs(y="Pr(left_welfare == 1)")
+ggsave(
+  "heterogeneity__prediciton_test.png")
+```
+
+
+```{r, echo=FALSE}
+## Testing for heterogeneity in my Y, that causes predictions to center around my partial dependency variable: year_1
+ice_dat2 = pdp::partial(mod_rf, pred.var = c("year_1"), 
+                        ice = T, center = T, 
+                        prob = T,type= "classification", 
+                        train = train_data_rf) 
+ice_dat2
+```
+
+
+```{r, echo=FALSE}
+## Generating an individual_conditional_expectation graph for the relationship between my Y, left_welfare, and my top variable, year_1
+ ggplot(data=ice_dat2) + 
+  geom_line(aes(year_1,yhat,group=yhat.id),alpha=.05) +
+  labs(y="Pr(left_welfare == 1)")
+ggsave(
+  "individual_conditional_expectation_test.png")
+```
+
+### I am curious to test for heterogeneity within my gender variable:
+```{r, echo=FALSE}
+## Testing for heterogeneity in my Y, that causes predictions to center around my partial dependency variable: gender_ذكر
+ice_dat2 = pdp::partial(mod_rf, pred.var = c("gender_ذكر"), 
+                        ice = T, center = T, 
+                        prob = T,type= "classification", 
+                        train = train_data_rf) 
+ice_dat2
+```
+
+### Plot Interpretation:
+The graph below for the ICE_test_plot for Gender, suggests no clear trend amongst  the males in the program and it appears that the probability of leaving welfare, varies drastically across males.
+```{r, echo=FALSE}
+## Generating an individual_conditional_expectation graph for the relationship between my Y, left_welfare, and  the gender variable: gender_ذكر
+ ggplot(data=ice_dat2) + 
+  geom_line(aes(gender_ذكر,yhat,group=yhat.id),alpha=.05) +
+  labs(y="Pr(left_welfare == 1)")
+ggsave(
+  "ICE_test_gender_ذكر.png")
+```
+
+### Testing for heterogeneity in my Y, that causes predictions to center around my partial dependency variable: monthly_income
+```{r, echo=FALSE}
+## Testing for heterogeneity in my Y, that causes predictions to center around my partial dependency variable: monthly_income
+ice_dat2 = pdp::partial(mod_rf, pred.var = c("monthly_income"), 
+                        ice = T, center = T, 
+                        prob = T,type= "classification", 
+                        train = train_data_rf) 
+ice_dat2
+```
+
+### Plot Interpretation:
+I think the plot almost shows three tracks of individuals in the program. I will attempt to offer a plausible explanation for the behavior of individuals in each track:
+1- Group one, with the upper track, consists of individuals who were persistent in leaving welfare and as soon as their monthly_income began rising, their Probability of leaving welfare increased as well. Perhaps those are individuals who behaved in the manner that the program-makers had intended, whereby a wage subsidy gives a temporary boost in one's income and then an individual can use that wage increase to perhaps attain demanded labor market skills or negotiate and find a better paying unsubsidized private sector job; hence, why their probability of leaving the program increased with rises in income.
+
+2- Group two, with the middle thick track, represents the majority of individuals in the program, where it appears that changes in monthly_income, did not significantly impact whether they stay or leave the program before the 5-years subsidy period is fully exhausted. 
+
+3- Group three, with the bottom track, consists of individuals who interestingly had a lower Probability in leaving welfare as their monthly_income increased. One plausible explanation for the behavior of individuals in this group is that such individuals enjoyed the wage subsdiy and the job stability that comes from the welfare program, and were not necessarily as 'motivated' to find an unsubsidized private sector job. This group may be considered disappointing from a policy-maker's perspective, as one would intuitively think and hope that as one's monthly_income rises, so should their 'motivation' and ability to acquire demanded labor market skills. 
+
+Finally, one may also take a more positive view towards the third group and argue that the behavior of such individuals is suggestive of a low labor market attachment, and absence the subsidy, they would drop out of the workforce. Therefore, while staying for the full subsidy period is not economically ideal from a government's and policymakers' perspective, yet it is still socially better and less costly overall than having individuals completely out of the workforce.
+```{r}
+## Generating an individual_conditional_expectation graph for the relationship between my Y, left_welfare, and  the income variable: monthly_income
+ ggplot(data=ice_dat2) + 
+  geom_line(aes(monthly_income,yhat,group=yhat.id),alpha=.05) +
+  labs(y="Pr(left_welfare == 1)")
+```
+
+
+```{r}
+test_data_rf = test_data_rf %>% filter(is.na(left_welfare)==FALSE)
+```
+
+# Discussion:
+### Now, let's run our best performing model, RF, on the test_data_rf:
+I have encountered the following error while running my RF model on test_data_rf, which I tried to rectify by running the chunk above, but unfortunately it did not work.
+```{r}
+## Predictive Performance Random Forest on test_data_rf
+pred <- predict(mod_rf4,newdata = test_data_rf)
+confusionMatrix(table(pred,test_data_rf$left_welfare))
+```
+
+
+### What tools/methods did you consider but not use in the final analysis?
+I had considered using CART as one of my machine learning techniques and have attempted to run the model several times, but my computer could not handle the complexity of the model. In fact, in the three times I ran the CART model, my R would shutdown w/out my control.
+
+Second, I intended to use a dummy variable to categorize geographic regions as urban, suburb, and rural areas. However, the Statistical Agency in Saudi Arabia had not updated and released recent on the categorization of geographic regions since 2010, but given the drastic changes in where people currently live compared to 2010, I I thought that using an old classification would not produce meaningul results. 
+
+### How would you expand the analysis if given more time?
+The following will be conducted for my thesis purposes:
+First, I will manually match the two datasets that I had initially intended to use, based on school_name.
+1- Teachers' Wage Subsidy Program, which I am currently using.
+2- The Standardized Exams database
+
+Second, I will perform the same analysis that I had performed but on the school, rather than individual-level.
+
+Third, I will use the 2020 updated geographic unit classification, which will be released by Saudi Arabia' Statistical Agency in January, 2020. This is because I suspect that one's geographic area, particularly females, plays a key role in whether they leave the wage subsidy program.
+
+# References:
+
+He, Benlan, Yong Shi, Qian Wan, and Xi Zhao. "Prediction of customer attrition of commercial banks based on SVM model." Procedia Computer Science 31 (2014): 423-430.
+
+Sharma, Devashish, U. B. Yadav, and Pulak Sharma. "The concept of sensitivity and specificity in relation to two types of errors and its application in medical research." Journal of Reliability and Statistical studies 2, no. 2 (2009): 53-58.
+
+Yukselturk, Erman, Serhat Ozekes, and Yalın Kılıç Türel. "Predicting dropout student: an application of data mining methods in an online education program." European Journal of Open, Distance and e-learning 17, no. 1 (2014): 118-133.
+
+Xie, Yaya, Xiu Li, E. W. T. Ngai, and Weiyun Ying. "Customer churn prediction using improved balanced random forests." Expert Systems with Applications 36, no. 3 (2009): 5445-5449.
+
